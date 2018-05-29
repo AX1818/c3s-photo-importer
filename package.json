@@ -1,0 +1,15 @@
+{
+  "name": "c3s-photo-importer",
+  "version": "1.0.0",
+  "description": "Celia Boutique Cloud Store AWS Serverless",
+  "main": "handler.js",
+  "repository": "git@githubAX1818:AX1818/c3s-photo-importer.git",
+  "author": "Austin Xie <weiyu.xie@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "async": "^2.6.1",
+    "aws-sdk": "^2.247.1",
+    "gm": "^1.23.1",
+    "lodash": "^4.17.10"
+  }
+}
