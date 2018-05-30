@@ -10,10 +10,18 @@ const waterfall = require('async/waterfall');
 const AWS = require('aws-sdk');
 const AWS_REGION = process.env.AWS_REGION || 'ap-southeast-2';
 const REPO_BUCKET = process.env.REPO_BUCKET || 'c3s-clothes-bucket';
+const DYNAMODB_TABLE = process.env.DYNAMODB_TABLE || 'C3S-Clothes-Repo-dev';
 
+const documentClient = new AWS.DynamoDB.DocumentClient();
 const s3 = new AWS.S3({
   region: AWS_REGION //sydney
 });
+
+function timestamp() {
+  const dt = new Date();
+  const day = dt.getDate();
+  return `${dt.getFullYear()}-${dt.getMonth() + 1}-${day > 9 ? '' : '0'}${day}`;
+}
 
 function* sizeGenerator() {
   yield {
@@ -62,10 +70,10 @@ module.exports = {
                   Body: buffer,
                   ContentType: response.ContentType
                 },
-                (s3err, data) => {
-                  if (s3err) {
-                    console.error('err1: ', JSON.stringify(s3err, null, 2));
-                    next(s3err);
+                (err, data) => {
+                  if (err) {
+                    console.error('err1: ', JSON.stringify(err, null, 2));
+                    next(err);
                   } else {
                     next(null, {
                       ContentType: response.ContentType,
@@ -94,22 +102,22 @@ module.exports = {
           (response, next) => {
             gm(response.Body).toBuffer((err, buffer) => {
               s3.putObject({
-                Bucket: REPO_BUCKET,
-                Key: `${baseName}/${Key}`,
-                Body: buffer,
-                ContentType: response.ContentType
-              },
-              (err, data) => {
-                if (err) {
-                  console.error(JSON.stringify(err, null, 2));
-                  next(err);
-                } else {
-                  next(null, {
-                    ContentType: response.ContentType,
-                    Body: buffer
-                  });
-                }
-              });
+                  Bucket: REPO_BUCKET,
+                  Key: `${baseName}/${Key}`,
+                  Body: buffer,
+                  ContentType: response.ContentType
+                },
+                (err, data) => {
+                  if (err) {
+                    console.error(JSON.stringify(err, null, 2));
+                    next(err);
+                  } else {
+                    next(null, {
+                      ContentType: response.ContentType,
+                      Body: buffer
+                    });
+                  }
+                });
             });
           },
           resizePhoto, // 'xl'
@@ -126,6 +134,24 @@ module.exports = {
                 next(err);
               } else {
                 console.log('delete object: ', data);
+                next(null, data);
+              }
+            })
+          },
+          (response, next) => {
+            documentClient.put({
+              TableName: DYNAMODB_TABLE,
+              Item: {
+                Id: baseName,
+                Type: 'C',
+                Code: baseName,
+                Timestamp: timestamp()
+              }
+            }, (err, data) => {
+              if (err) {
+                next(err);
+              } else {
+                console.log('save clothe in dynamodb: ', data);
                 next(null, data);
               }
             })
