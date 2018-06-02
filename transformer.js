@@ -19,8 +19,9 @@ const s3 = new AWS.S3({
 
 function timestamp() {
   const dt = new Date();
+  const month = dt.getMonth() + 1;
   const day = dt.getDate();
-  return `${dt.getFullYear()}-${dt.getMonth() + 1}-${day > 9 ? '' : '0'}${day}`;
+  return `${dt.getFullYear()}-${month > 9 ? '' : '0'}${month}-${day > 9 ? '' : '0'}${day}`;
 }
 
 function* sizeGenerator() {
